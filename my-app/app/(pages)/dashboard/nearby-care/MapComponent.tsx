@@ -5,15 +5,26 @@ import { useCallback, useEffect, useState, useRef } from 'react';
 
 const libraries: Libraries = ['places'];
 
+export interface MapFacility {
+    id?: string;
+    name: string;
+    lat: number;
+    lng: number;
+    type?: string;
+    address?: string;
+    phone?: string;
+    [key: string]: unknown;
+}
+
 interface MapComponentProps {
     center: [number, number];
     userLocation: [number, number] | null;
-    facilities: any[];
+    facilities: MapFacility[];
     onMapClick?: (lat: number, lon: number) => void;
 }
 
 export default function MapComponent({ center, userLocation, facilities, onMapClick }: MapComponentProps) {
-    const [selectedFacility, setSelectedFacility] = useState<any | null>(null);
+    const [selectedFacility, setSelectedFacility] = useState<MapFacility | null>(null);
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const [apiError, setApiError] = useState<string | null>(null);
     const mapRef = useRef<google.maps.Map | null>(null);
@@ -22,11 +33,13 @@ export default function MapComponent({ center, userLocation, facilities, onMapCl
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const originalError = console.error;
-            console.error = (...args: any[]) => {
+            console.error = (...args: unknown[]) => {
                 const message = args.join(' ');
-                if (message.includes('ApiTargetBlockedMapError') || 
+                if (message.includes('ApiTargetBlockedMapError') ||
                     message.includes('api-target-blocked') ||
-                    message.includes('RefererNotAllowed')) {
+                    message.includes('RefererNotAllowed') ||
+                    message.includes('InvalidKeyMapError') ||
+                    message.includes('InvalidKey')) {
                     setApiError(message);
                 }
                 originalError(...args);
@@ -38,8 +51,9 @@ export default function MapComponent({ center, userLocation, facilities, onMapCl
         }
     }, []);
 
-    const apiKey = process.env.GOOGLE_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_API_KEY || '';
-    
+    // Must use NEXT_PUBLIC_* — client components only get env vars prefixed with NEXT_PUBLIC_
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || '';
+
     const { isLoaded, loadError } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: apiKey,
@@ -58,7 +72,7 @@ export default function MapComponent({ center, userLocation, facilities, onMapCl
     const onLoad = useCallback((mapInstance: google.maps.Map) => {
         mapRef.current = mapInstance;
         setMap(mapInstance);
-        
+
         // Set initial center
         if (center && center[0] && center[1]) {
             mapInstance.setCenter({ lat: center[0], lng: center[1] });
@@ -81,7 +95,7 @@ export default function MapComponent({ center, userLocation, facilities, onMapCl
         if (typeof window === 'undefined' || !window.google?.maps) {
             return undefined; // Use default marker if Google Maps not loaded
         }
-        
+
         const colors: Record<string, string> = {
             'HOSPITAL': '#10b981', // emerald
             'CLINIC': '#3b82f6', // blue
@@ -89,10 +103,10 @@ export default function MapComponent({ center, userLocation, facilities, onMapCl
             'NGO': '#a855f7' // purple
         };
         const color = colors[type] || '#6b7280';
-        
+
         // Custom pin shape SVG path
         const pinPath = 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z';
-        
+
         return {
             path: pinPath,
             fillColor: color,
@@ -109,11 +123,12 @@ export default function MapComponent({ center, userLocation, facilities, onMapCl
             <div className="h-full w-full flex items-center justify-center bg-gray-100">
                 <div className="text-center p-6 bg-white rounded-xl shadow-lg max-w-md">
                     <p className="text-red-600 font-semibold mb-2 text-lg">Google Maps API Key Missing</p>
-                    <p className="text-sm text-muted-foreground mb-4">Please add GOOGLE_API_KEY to your .env file</p>
+                    <p className="text-sm text-muted-foreground mb-4">Maps run in the browser and need a public key. Add this to <strong>my-app/.env</strong>:</p>
                     <div className="text-left text-xs bg-gray-50 p-3 rounded">
-                        <p className="font-semibold mb-1">Add to .env:</p>
-                        <code className="text-xs">GOOGLE_API_KEY=your_api_key_here</code>
+                        <p className="font-semibold mb-1">Add to my-app/.env:</p>
+                        <code className="text-xs block">NEXT_PUBLIC_GOOGLE_API_KEY=your_google_maps_api_key</code>
                     </div>
+                    <p className="text-xs text-amber-700 mt-3">Use the same key as GOOGLE_API_KEY. Restart the dev server after changing .env.</p>
                 </div>
             </div>
         );
@@ -128,12 +143,13 @@ export default function MapComponent({ center, userLocation, facilities, onMapCl
 
     if (loadError || apiError) {
         const errorMessage = apiError || loadError?.message || String(loadError) || 'Unknown error';
-        const isBlockedError = hasBlockedError || 
-                              errorMessage.includes('ApiTargetBlockedMapError') || 
-                              errorMessage.includes('api-target-blocked') ||
-                              errorMessage.includes('RefererNotAllowedMapError') ||
-                              errorMessage.includes('RefererNotAllowed');
-        
+        const isInvalidKeyError = errorMessage.includes('InvalidKeyMapError') || errorMessage.includes('InvalidKey');
+        const isBlockedError = hasBlockedError ||
+            errorMessage.includes('ApiTargetBlockedMapError') ||
+            errorMessage.includes('api-target-blocked') ||
+            errorMessage.includes('RefererNotAllowedMapError') ||
+            errorMessage.includes('RefererNotAllowed');
+
         return (
             <div className="h-full w-full flex items-center justify-center bg-gray-100 p-4">
                 <div className="text-center p-6 bg-white rounded-xl shadow-lg max-w-2xl">
@@ -145,7 +161,22 @@ export default function MapComponent({ center, userLocation, facilities, onMapCl
                         </div>
                         <p className="text-red-600 font-bold mb-2 text-xl">Google Maps API Error</p>
                     </div>
-                    {isBlockedError ? (
+                    {isInvalidKeyError ? (
+                        <>
+                            <p className="text-sm text-gray-700 mb-4 font-medium">
+                                Invalid or missing API key. The map runs in the browser and needs <strong>NEXT_PUBLIC_GOOGLE_API_KEY</strong>.
+                            </p>
+                            <div className="text-left bg-amber-50 p-5 rounded-lg border-2 border-amber-300 mb-4">
+                                <p className="font-bold mb-3 text-sm text-amber-900">Fix:</p>
+                                <ol className="list-decimal list-inside space-y-2 text-xs text-gray-800">
+                                    <li>Create or edit <strong>my-app/.env</strong> (Next.js loads .env from the app folder).</li>
+                                    <li>Add: <code className="bg-white px-1 rounded">NEXT_PUBLIC_GOOGLE_API_KEY=your_key_here</code></li>
+                                    <li>Use the same key as <code>GOOGLE_API_KEY</code> if you have one. Enable &quot;Maps JavaScript API&quot; and &quot;Places API&quot; in <a href="https://console.cloud.google.com/apis/library" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Cloud Console</a>.</li>
+                                    <li>Restart the dev server (<code>bun dev</code> or <code>npm run dev</code>).</li>
+                                </ol>
+                            </div>
+                        </>
+                    ) : isBlockedError ? (
                         <>
                             <p className="text-sm text-gray-700 mb-6 font-medium">
                                 Your API key has domain restrictions blocking localhost.
@@ -158,10 +189,10 @@ export default function MapComponent({ center, userLocation, facilities, onMapCl
                                     </li>
                                     <li className="mb-2">Click on your API key to edit it</li>
                                     <li className="mb-2">
-                                        Under <strong>"Application restrictions"</strong>:
+                                        Under <strong>&quot;Application restrictions&quot;</strong>:
                                         <ul className="list-disc list-inside ml-6 mt-2 space-y-1">
-                                            <li>Select <strong>"HTTP referrers (web sites)"</strong></li>
-                                            <li>Click <strong>"Add an item"</strong> and add these one by one:
+                                            <li>Select <strong>&quot;HTTP referrers (web sites)&quot;</strong></li>
+                                            <li>Click <strong>&quot;Add an item&quot;</strong> and add these one by one:
                                                 <div className="bg-white p-2 rounded mt-2 font-mono text-xs">
                                                     <div>localhost:3000/*</div>
                                                     <div>127.0.0.1:3000/*</div>
@@ -171,20 +202,20 @@ export default function MapComponent({ center, userLocation, facilities, onMapCl
                                         </ul>
                                     </li>
                                     <li className="mb-2">
-                                        Under <strong>"API restrictions"</strong>:
+                                        Under <strong>&quot;API restrictions&quot;</strong>:
                                         <ul className="list-disc list-inside ml-6 mt-1">
-                                            <li>Select <strong>"Restrict key"</strong></li>
-                                            <li>Ensure <strong>"Maps JavaScript API"</strong> is checked/enabled</li>
+                                            <li>Select <strong>&quot;Restrict key&quot;</strong></li>
+                                            <li>Ensure <strong>&quot;Maps JavaScript API&quot;</strong> is checked/enabled</li>
                                         </ul>
                                     </li>
-                                    <li className="mb-2"><strong>Click "Save"</strong> and wait 1-2 minutes</li>
+                                    <li className="mb-2"><strong>Click &quot;Save&quot;</strong> and wait 1-2 minutes</li>
                                     <li><strong>Refresh this page</strong></li>
                                 </ol>
                             </div>
                             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                                 <p className="text-xs text-blue-900 font-semibold mb-1">💡 Alternative for Development:</p>
                                 <p className="text-xs text-blue-800">
-                                    You can temporarily set "Application restrictions" to <strong>"None"</strong> for local development, 
+                                    You can temporarily set &quot;Application restrictions&quot; to <strong>&quot;None&quot;</strong> for local development,
                                     but remember to add restrictions before deploying to production.
                                 </p>
                             </div>
@@ -213,7 +244,7 @@ export default function MapComponent({ center, userLocation, facilities, onMapCl
         );
     }
 
-    const mapCenter = center && center[0] && center[1] 
+    const mapCenter = center && center[0] && center[1]
         ? { lat: center[0], lng: center[1] }
         : { lat: 28.6139, lng: 77.2090 }; // Default to Delhi
 
@@ -252,12 +283,12 @@ export default function MapComponent({ center, userLocation, facilities, onMapCl
 
             {/* Facility Markers */}
             {facilities.map((facility) => {
-                if (facility.latitude && facility.longitude) {
+                if (facility.lat && facility.lng) {
                     return (
                         <Marker
                             key={facility.id}
-                            position={{ lat: facility.latitude, lng: facility.longitude }}
-                            icon={getMarkerIcon(facility.type)}
+                            position={{ lat: facility.lat, lng: facility.lng }}
+                            icon={getMarkerIcon(facility.type || '')}
                             onClick={() => setSelectedFacility(facility)}
                             title={facility.name}
                         />
@@ -270,8 +301,8 @@ export default function MapComponent({ center, userLocation, facilities, onMapCl
             {selectedFacility && (
                 <InfoWindow
                     position={{
-                        lat: selectedFacility.latitude,
-                        lng: selectedFacility.longitude
+                        lat: selectedFacility.lat,
+                        lng: selectedFacility.lng
                     }}
                     onCloseClick={() => setSelectedFacility(null)}
                 >
@@ -284,7 +315,7 @@ export default function MapComponent({ center, userLocation, facilities, onMapCl
                         )}
                         <div className="flex gap-2 mt-2">
                             <a
-                                href={`https://www.google.com/maps/dir/?api=1&destination=${selectedFacility.latitude},${selectedFacility.longitude}`}
+                                href={`https://www.google.com/maps/dir/?api=1&destination=${selectedFacility.lat},${selectedFacility.lng}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-xs text-blue-600 hover:underline"

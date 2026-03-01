@@ -2,12 +2,11 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ScrollAnimate } from "@/components/scroll-animate"
 import {
   Calendar, Users, FileText,
-  CheckCircle, Shield, Lock, Activity, Pill, Apple,
-  BookOpen, Hospital, Sparkles, Sun, CloudRain,
-  ArrowRight, Heart
+  CheckCircle, Shield, Lock, Activity, Pill,
+  BookOpen, Hospital, Sparkles, Sun,
+  ArrowRight, Droplets, ShieldAlert, Globe
 } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
@@ -39,31 +38,33 @@ export default function SanctuaryHome() {
         scrolled ? "w-[90%] md:w-auto" : "w-[95%] md:w-auto"
       )}>
         <div className={cn(
-          "flex items-center justify-between px-2 py-2 rounded-full border border-white/20 shadow-lg backdrop-blur-xl transition-all duration-500",
-          scrolled ? "bg-white/90 pl-4 pr-2" : "bg-white/60 pl-6 pr-3"
+          "flex items-center justify-between px-3 py-3 rounded-full border border-white/40 shadow-sm backdrop-blur-xl transition-all duration-500 bg-[#F4F1EA]/95" // matching beige bg
         )}>
-          <div className="flex items-center gap-3 mr-8">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-glow">
-              <Sun className="w-4 h-4 text-primary-foreground" />
+          {/* Logo Section */}
+          <div className="flex items-center gap-3 mr-8 ml-2">
+            <div className="w-10 h-10 rounded-full bg-[#408E5F] flex items-center justify-center shadow-sm">
+              <Sun className="w-5 h-5 text-white" />
             </div>
-            <span className="text-lg font-serif font-bold tracking-tight text-foreground/90 hidden sm:block">Sahaay</span>
+            <span className="text-xl font-serif font-bold tracking-tight text-[#4F3F2F] hidden sm:block">Sahaay</span>
           </div>
 
-          <div className="hidden md:flex items-center gap-1 bg-muted/50 rounded-full px-2 py-1">
-            {['Sanctuary', 'Daily Life', 'Community'].map((item) => (
+          {/* Links Section */}
+          <div className="hidden md:flex items-center gap-6 px-4">
+            {['Surveillance', 'Sanctuary', 'Daily Life', 'Community'].map((item) => (
               <a
                 key={item}
                 href={`#${item.toLowerCase().replace(' ', '-')}`}
-                className="px-4 py-1.5 text-sm font-medium rounded-full hover:bg-white hover:shadow-sm transition-all text-muted-foreground hover:text-foreground"
+                className="text-[15px] font-medium transition-all text-[#7A6A5C] hover:text-[#4F3F2F]"
               >
                 {item}
               </a>
             ))}
           </div>
 
-          <div className="flex items-center gap-2 ml-4 md:ml-8">
+          {/* Button Section */}
+          <div className="flex items-center ml-4 md:ml-8">
             <Link href="/auth/login">
-              <Button className="rounded-full bg-primary text-white hover:bg-primary/90 px-6 h-10 shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
+              <Button className="rounded-full bg-[#408E5F] text-white hover:bg-[#347A50] px-7 h-11 text-[15px] font-medium shadow-sm transition-all hover:scale-105">
                 Begin Journey
               </Button>
             </Link>
@@ -104,6 +105,72 @@ export default function SanctuaryHome() {
                   Enter Your Sanctuary
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Smart Health Surveillance & Early Warning */}
+        <section id="surveillance" className="py-24 px-6 bg-[#F0FDF4] relative overflow-hidden">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <Badge variant="outline" className="mb-6 rounded-full px-4 py-1.5 border-emerald-300 text-emerald-700 bg-emerald-50">
+                Smart Health Surveillance
+              </Badge>
+              <h2 className="font-serif text-4xl md:text-5xl mb-6">Detect & Prevent Water-Borne Outbreaks</h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Sahaay supports community health surveillance: report water quality, see outbreak risk by area, and get early warnings—aligned with health department needs in vulnerable regions.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              <Link href="/auth/login" className="group">
+                <div className="h-full p-8 rounded-[2rem] bg-white border border-emerald-100 shadow-sm hover:shadow-xl hover:border-emerald-200 transition-all duration-300">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mb-6 text-emerald-600 group-hover:scale-110 transition-transform">
+                    <Droplets className="w-7 h-7" />
+                  </div>
+                  <h3 className="font-serif text-2xl font-medium mb-3">Water Quality Reporting</h3>
+                  <p className="text-muted-foreground mb-4">
+                    ASHA workers and volunteers submit test results from hand pumps, wells, and taps—turbidity, pH, bacterial presence—so officials can monitor contamination.
+                  </p>
+                  <span className="inline-flex items-center text-sm font-semibold text-emerald-600 group-hover:gap-2 gap-1 transition-all">
+                    Report in dashboard <ArrowRight className="w-4 h-4" />
+                  </span>
+                </div>
+              </Link>
+
+              <Link href="/auth/login" className="group">
+                <div className="h-full p-8 rounded-[2rem] bg-white border border-amber-100 shadow-sm hover:shadow-xl hover:border-amber-200 transition-all duration-300">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center mb-6 text-amber-600 group-hover:scale-110 transition-transform">
+                    <ShieldAlert className="w-7 h-7" />
+                  </div>
+                  <h3 className="font-serif text-2xl font-medium mb-3">Outbreak Risk by Area</h3>
+                  <p className="text-muted-foreground mb-4">
+                    AI-driven early warning: risk levels (low/medium/high) by location using symptom reports and water quality data from the last 14 days.
+                  </p>
+                  <span className="inline-flex items-center text-sm font-semibold text-amber-600 group-hover:gap-2 gap-1 transition-all">
+                    View risk map <ArrowRight className="w-4 h-4" />
+                  </span>
+                </div>
+              </Link>
+
+              <div className="p-8 rounded-[2rem] bg-white border border-slate-100 shadow-sm">
+                <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mb-6 text-blue-600">
+                  <Globe className="w-7 h-7" />
+                </div>
+                <h3 className="font-serif text-2xl font-medium mb-3">Multilingual & Offline-Ready</h3>
+                <p className="text-muted-foreground">
+                  English, Hindi, and Assamese for community and tribal language support. Built for areas with patchy connectivity.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-12 p-6 rounded-2xl bg-white/80 border border-emerald-100 text-center">
+              <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+                <strong className="text-foreground">How it works:</strong> Sign up and use the dashboard to submit water quality reports (source, turbidity, pH, pass/fail). The system aggregates health records and water data by area and computes outbreak risk. Health officials can use the Outbreak Risk page to see hotspots and prioritize interventions.
+              </p>
+              <Link href="/auth/login" className="inline-flex items-center gap-2 mt-4 text-emerald-600 font-semibold hover:underline">
+                Get started <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>

@@ -11,20 +11,23 @@ import {
     Settings,
     MapPin,
     HeartPulse,
-    Syringe,
     AlertTriangle,
     LogOut,
+    Droplets,
+    ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Outbreak Risk", href: "/dashboard/outbreak-risk", icon: ShieldAlert },
+    { name: "Water Quality", href: "/dashboard/water-quality", icon: Droplets },
     { name: "Nearby Care", href: "/dashboard/nearby-care", icon: MapPin },
     { name: "Health Summary", href: "/dashboard/health-summary", icon: Activity },
     { name: "Care Plan", href: "/dashboard/care-plan", icon: FileText },
-    { name: "Achievements", href: "/dashboard/achievements", icon: Syringe },
+    { name: "Hotspot Map", href: "/dashboard/hotspots", icon: MapPin },
     { name: "Community", href: "/dashboard/community", icon: Users },
-    { name: "Family", href: "/dashboard/family", icon: Users }, // Using Users for Family as well, or maybe HeartPulse? Let's use Users for now as per image looks like family
+    // { name: "Family", href: "/dashboard/family", icon: Users },
     { name: "Support", href: "/dashboard/support", icon: LifeBuoy },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
@@ -76,7 +79,7 @@ export function Sidebar() {
                     <AlertTriangle className="h-5 w-5 fill-white text-white" />
                     Emergency SOS
                 </button>
-                <button 
+                <button
                     onClick={async () => {
                         try {
                             const res = await fetch('/api/auth/logout', {

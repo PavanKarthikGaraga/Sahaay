@@ -8,7 +8,7 @@ const JWT_SECRET = new TextEncoder().encode(
     process.env.JWT_SECRET || 'fallback_secret_key_change_in_prod'
 );
 
-async function getUserId(req: Request): Promise<string | null> {
+async function _getUserId(req: Request): Promise<string | null> {
     try {
         const authHeader = req.headers.get('authorization');
         if (authHeader?.startsWith('Bearer ')) {
@@ -33,7 +33,7 @@ export async function GET(
 ) {
     try {
         await connectDB();
-        
+
         const { id } = await params;
         const comments = await CommunityComment.find({ postId: id })
             .sort({ createdAt: -1 })

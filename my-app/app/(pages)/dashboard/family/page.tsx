@@ -1,16 +1,24 @@
 "use client";
 
-import { Plus, MoreVertical, Trash2, Edit2, Users, Activity, Heart, Phone, Mail, Calendar } from "lucide-react";
+import { Plus, Trash2, Users, Activity, Heart, Phone, Mail, Calendar } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/components/ui/toast";
 
+interface FamilyMember {
+    _id?: string;
+    name: string;
+    relationship: string;
+    age?: string;
+    email?: string;
+    phone?: string;
+}
+
 export default function FamilyPage() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [members, setMembers] = useState<any[]>([]);
+    const [members, setMembers] = useState<FamilyMember[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [editingMember, setEditingMember] = useState<any>(null);
+    const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
     const [newMember, setNewMember] = useState({
         name: '',
         relationship: '',
@@ -22,6 +30,7 @@ export default function FamilyPage() {
 
     useEffect(() => {
         fetchFamily();
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: fetch once on mount
     }, []);
 
     const fetchFamily = async () => {
@@ -105,8 +114,8 @@ export default function FamilyPage() {
 
     // Calculate stats from members
     const totalMembers = members.length;
-    const averageAge = members.length > 0 
-        ? Math.round(members.reduce((sum, m) => sum + (parseInt(m.age) || 0), 0) / members.length)
+    const averageAge = members.length > 0
+        ? Math.round(members.reduce((sum, m) => sum + (parseInt(m.age || '0') || 0), 0) / members.length)
         : 0;
 
     return (
@@ -115,18 +124,18 @@ export default function FamilyPage() {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight mb-2">Family Circle</h1>
-                    <p className="text-muted-foreground text-sm">Manage and monitor your family members' health</p>
+                    <p className="text-muted-foreground text-sm">Manage and monitor your family members&apos; health</p>
                 </div>
                 <div className="flex gap-3">
                     {members.length > 0 && (
-                        <button 
+                        <button
                             onClick={handleReset}
                             className="bg-gray-100 text-foreground px-4 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-gray-200 transition-colors"
                         >
                             Reset
                         </button>
                     )}
-                    <button 
+                    <button
                         onClick={() => {
                             setEditingMember(null);
                             setNewMember({ name: '', relationship: '', age: '', email: '', phone: '' });
@@ -175,7 +184,7 @@ export default function FamilyPage() {
                         </div>
                         <h3 className="text-xl font-bold mb-2">No Family Members Yet</h3>
                         <p className="text-muted-foreground mb-6">Start building your family circle by adding members to share health information and care plans.</p>
-                        <button 
+                        <button
                             onClick={() => {
                                 setShowAddModal(true);
                             }}
@@ -188,7 +197,7 @@ export default function FamilyPage() {
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                     {members.map((member) => (
-                        <div key={member.id} className="bg-white rounded-3xl p-6 border border-border shadow-sm hover:shadow-md transition-shadow">
+                        <div key={member._id || member.name} className="bg-white rounded-3xl p-6 border border-border shadow-sm hover:shadow-md transition-shadow">
                             <div className="flex justify-between items-start mb-6">
                                 <div className="flex gap-4">
                                     <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
@@ -202,8 +211,8 @@ export default function FamilyPage() {
                                     </div>
                                 </div>
                                 <div className="flex gap-1">
-                                    <button 
-                                        onClick={() => handleDeleteMember(member.id)}
+                                    <button
+                                        onClick={() => handleDeleteMember(member._id!)}
                                         className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"
                                         title="Remove member"
                                     >

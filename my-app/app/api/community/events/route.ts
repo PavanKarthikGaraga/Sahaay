@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import { CommunityEvent, User } from '@/lib/models';
+import { CommunityEvent } from '@/lib/models';
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
@@ -27,22 +27,22 @@ async function getUserId(req: Request): Promise<string | null> {
 }
 
 // Get all events
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
     try {
         await connectDB();
-        
+
         const events = await CommunityEvent.find()
             .sort({ date: 1 })
             .populate('createdBy', 'name')
             .lean();
 
-        const formattedEvents = events.map((event: any) => {
+        const formattedEvents = events.map((event: { _id: { toString(): string }; date: string | Date; title?: string; location?: string; type?: string; link?: string; attendees?: unknown[] }) => {
             const eventDate = new Date(event.date);
             const day = eventDate.getDate();
             const month = eventDate.toLocaleString('default', { month: 'short' }).toUpperCase();
-            const formattedDate = eventDate.toLocaleString('en-US', { 
-                weekday: 'short', 
-                day: 'numeric', 
+            const formattedDate = eventDate.toLocaleString('en-US', {
+                weekday: 'short',
+                day: 'numeric',
                 month: 'short',
                 hour: '2-digit',
                 minute: '2-digit'
@@ -75,7 +75,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         await connectDB();
-        
+
         const userId = await getUserId(req);
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: 'Event not found' }, { status: 404 });
             }
 
-            const isAttending = event.attendees.some((attendeeId: any) => attendeeId.toString() === userId);
+            const isAttending = event.attendees.some((attendeeId: unknown) => String(attendeeId) === userId);
             if (!isAttending) {
                 event.attendees.push(userId as any);
                 await event.save();
@@ -124,9 +124,9 @@ export async function POST(req: Request) {
         });
 
         const eventDate = new Date(event.date);
-        const formattedDate = eventDate.toLocaleString('en-US', { 
-            weekday: 'short', 
-            day: 'numeric', 
+        const formattedDate = eventDate.toLocaleString('en-US', {
+            weekday: 'short',
+            day: 'numeric',
             month: 'short',
             hour: '2-digit',
             minute: '2-digit'
